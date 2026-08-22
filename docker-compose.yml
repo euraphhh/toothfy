@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: saas_odonto_db
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: saas_odonto
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: 
+      context: ./backend
+    container_name: saas_odonto_backend
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=root
+      - DB_PASS=rootpassword
+      - DB_NAME=saas_odonto
+      - DATABASE_URL=postgresql://root:rootpassword@db:5432/saas_odonto
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - db
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: saas_odonto_frontend
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run dev -- --host
+
+volumes:
+  pgdata:

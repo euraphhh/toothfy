@@ -1,0 +1,94 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Clinic {
+  id                 String        @id @default(uuid())
+  name               String
+  metaBusinessId     String?
+  whatsappNumber     String?
+  subscriptionTier   String        @default("free") // free, pro, ultra
+  stripeCustomerId   String?       @unique
+  subscriptionStatus String?       // active, past_due, canceled
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  patients           Patient[]
+  appointments       Appointment[]
+  messages           Message[]
+  users              User[]
+}
+
+model Patient {
+  id               String        @id @default(uuid())
+  clinicId         String
+  clinic           Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  name             String
+  phone            String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  appointments     Appointment[]
+}
+
+model Appointment {
+  id               String        @id @default(uuid())
+  clinicId         String
+  clinic           Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patientId        String
+  patient          Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  date             DateTime
+  procedure        String?
+  status           String        @default("pending") // pending, confirmed, canceled, need_reschedule
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  messages         Message[]
+}
+
+model Message {
+  id               String        @id @default(uuid())
+  clinicId         String
+  clinic           Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointmentId    String
+  appointment      Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  type             String        // reminder_3d, reminder_1d, recall
+  direction        String        // in, out
+  status           String        // pending, sent, delivered, failed
+  externalId       String?       // ID do whatsapp para tracking de status
+  createdAt        DateTime      @default(now())
+}
+
+model User {
+  id               String        @id @default(uuid())
+  clinicId         String
+  clinic           Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  name             String
+  email            String        @unique
+  googleId         String?       @unique
+  passwordHash     String
+  role             String        @default("admin")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model VerificationCode {
+  id               String        @id @default(uuid())
+  email            String
+  code             String
+  expiresAt        DateTime
+  createdAt        DateTime      @default(now())
+}
+
+model PasswordResetToken {
+  id               String        @id @default(uuid())
+  email            String
+  token            String        @unique
+  expiresAt        DateTime
+  createdAt        DateTime      @default(now())
+}
