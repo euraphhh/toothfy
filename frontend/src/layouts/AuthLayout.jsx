@@ -1,10 +1,12 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { ShieldCheck, MessageCircle, CalendarClock } from 'lucide-react';
+import { useClinic } from '../contexts/ClinicContext';
 
 export default function AuthLayout() {
   const location = useLocation();
   const isRegister = location.pathname === '/register';
+  const { clinic } = useClinic();
 
   if (isRegister) {
     return (
@@ -28,7 +30,7 @@ export default function AuthLayout() {
         <div className="relative z-10 flex flex-col items-start p-16 max-w-2xl w-full h-full justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-blue-600/20 ring-1 ring-blue-500/50">🦷</div>
-            <span className="text-2xl font-bold text-white tracking-tight">SaaS Odonto</span>
+            <span className="text-2xl font-bold text-white tracking-tight">{clinic ? clinic.name : 'SaaS Odonto'}</span>
           </div>
 
           <div className="space-y-8 mt-12">

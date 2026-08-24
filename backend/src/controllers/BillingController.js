@@ -96,8 +96,22 @@ class BillingController {
     try {
       const { clinicId } = req.user;
       
-      // In a real scenario, you'd cancel it on Stripe using their Subscription ID.
-      // Since this is an MVP, we'll just downgrade their database tier back to free.
+      const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+      
+      if (!clinic) return res.status(404).json({ error: 'Clinic not found' });
+
+      // If they have a stripe customer, cancel their active subscriptions
+      if (clinic.stripeCustomerId) {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: clinic.stripeCustomerId,
+          status: 'active',
+        });
+
+        for (const sub of subscriptions.data) {
+          await stripe.subscriptions.cancel(sub.id);
+        }
+      }
+
       await prisma.clinic.update({
         where: { id: clinicId },
         data: {

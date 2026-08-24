@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, Phone, MessageSquare, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Phone, MessageSquare, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, XCircle, Link as LinkIcon, Plus } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import RecallModal from './RecallModal';
 import { fetchApi } from '../../lib/auth';
 import { toast } from 'sonner';
+import { useOutletContext } from 'react-router-dom';
 
 export default function Agenda() {
+  const { openNewAppointment } = useOutletContext();
   const [appointments, setAppointments] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [isRecallModalOpen, setIsRecallModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,7 @@ export default function Agenda() {
   const loadAppointments = async () => {
     setLoading(true);
     try {
+      // Por padrão buscando de hoje, mas idealmente teria um state de data aqui tbm
       const res = await fetchApi('/api/appointments');
       const data = await res.json();
       setAppointments(data);
@@ -31,11 +33,12 @@ export default function Agenda() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Confirmado': return "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800";
-      case 'Pendente': return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800";
-      case 'Cancelado': return "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800";
-      case 'Concluído': return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800";
-      default: return "bg-muted text-muted-foreground border-border";
+      case 'Confirmado': return "bg-blue-50 text-blue-700 border-blue-200";
+      case 'Pendente': return "bg-amber-50 text-amber-700 border-amber-200";
+      case 'Requer Atenção': return "bg-red-50 text-red-700 border-red-200 animate-pulse";
+      case 'Cancelado': return "bg-red-50 text-red-700 border-red-200 opacity-75";
+      case 'Concluído': return "bg-green-50 text-green-700 border-green-200";
+      default: return "bg-slate-50 text-slate-500 border-slate-200";
     }
   };
 
@@ -44,132 +47,127 @@ export default function Agenda() {
     setIsRecallModalOpen(true);
   };
 
+  const handleCancelAppointment = async (id) => {
+    if (!window.confirm('Tem certeza que deseja cancelar esta consulta?')) return;
+    try {
+      const res = await fetchApi(`/api/appointments/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'canceled' })
+      });
+      if (res.ok) {
+        toast.success('Consulta cancelada.');
+        loadAppointments();
+      } else {
+        toast.error('Erro ao cancelar consulta.');
+      }
+    } catch (e) {
+      toast.error('Erro de conexão.');
+    }
+  };
+
+  const todayStr = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', weekday: 'long' });
+
   return (
-    <div className="flex flex-col md:flex-row h-full gap-8 animate-in fade-in zoom-in-95 duration-500">
+    <div className="h-full flex flex-col space-y-6 animate-in fade-in zoom-in-95 duration-500 max-w-5xl mx-auto w-full pt-8 font-sans">
       
-      {/* Sidebar: Mini Calendário e Filtros */}
-      <aside className="w-full md:w-80 space-y-6 shrink-0">
-        <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5 text-blue-600" />
-              Novembro 2023
-            </h2>
-            <div className="flex gap-1">
-              <button className="p-1 hover:bg-muted rounded-md"><ChevronLeft className="w-4 h-4" /></button>
-              <button className="p-1 hover:bg-muted rounded-md"><ChevronRight className="w-4 h-4" /></button>
-            </div>
-          </div>
-          
-          {/* Mock Calendar Grid */}
-          <div className="grid grid-cols-7 gap-1 text-center text-sm mb-2">
-            {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
-              <div key={i} className="text-muted-foreground font-medium text-xs py-1">{d}</div>
-            ))}
-            {/* Empty slots */}
-            <div /><div /><div />
-            {/* Days */}
-            {Array.from({ length: 30 }).map((_, i) => (
-              <button 
-                key={i}
-                className={cn(
-                  "h-8 rounded-full flex items-center justify-center transition-colors",
-                  i + 1 === 15 
-                    ? "bg-blue-600 text-white font-bold shadow-md shadow-blue-500/25" 
-                    : "hover:bg-muted text-foreground"
-                )}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
+      {/* Header Limpo */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-200 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Agenda do Dia</h1>
+          <p className="text-sm text-slate-500 mt-1 capitalize">{todayStr}</p>
         </div>
+        <button 
+          onClick={openNewAppointment}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-sm flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Novo Agendamento
+        </button>
+      </div>
 
-        <div className="bg-card border border-border p-6 rounded-xl shadow-sm space-y-4">
-          <h3 className="font-semibold">Filtros de Status</h3>
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-blue-600">
-              <input type="checkbox" defaultChecked className="rounded border-border text-blue-600 focus:ring-blue-600" />
-              Confirmados
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-amber-600">
-              <input type="checkbox" defaultChecked className="rounded border-border text-blue-600 focus:ring-blue-600" />
-              Pendentes
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-red-600">
-              <input type="checkbox" defaultChecked className="rounded border-border text-blue-600 focus:ring-blue-600" />
-              Cancelados
-            </label>
+      {/* Lista de Consultas */}
+      <div className="flex-1 space-y-4">
+        {loading ? (
+          <div className="text-center text-slate-400 py-12 font-medium">Carregando agenda...</div>
+        ) : appointments.length === 0 ? (
+          <div className="text-center text-slate-400 py-12 font-medium">
+            Nenhuma consulta encontrada para hoje.
           </div>
-        </div>
-      </aside>
+        ) : (
+          appointments.map((apt) => {
+            const getStatusStr = (s) => {
+              if (s === 'confirmed') return 'Confirmado';
+              if (s === 'canceled') return 'Cancelado';
+              if (s === 'completed') return 'Concluído';
+              if (s === 'needs_attention') return 'Requer Atenção';
+              return 'Pendente';
+            };
+            const statusStr = getStatusStr(apt.status);
+            const timeStr = new Date(apt.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-      {/* Corpo principal: Lista de Consultas */}
-      <main className="flex-1 bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-border flex items-center justify-between bg-muted/20">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Agenda do Dia</h1>
-            <p className="text-sm text-muted-foreground mt-1">15 de Novembro, Quarta-feira</p>
-          </div>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm">
-            Novo Agendamento
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-auto p-6 space-y-4">
-          {appointments.length === 0 && !loading && (
-            <div className="text-center text-muted-foreground py-12">
-              Nenhuma consulta encontrada.
-            </div>
-          )}
-
-          {appointments.map((apt) => (
-            <div key={apt.id} className="group border border-border rounded-lg p-5 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all flex flex-col md:flex-row gap-6 md:items-center bg-background">
-              
-              <div className="flex items-center gap-4 md:w-48 shrink-0">
-                <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 font-bold px-3 py-2 rounded-md flex items-center gap-2 text-lg">
-                  <Clock className="w-5 h-5 opacity-70" /> {new Date(apt.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="font-bold text-lg">{apt.patient?.name}</h3>
-                  <span className={cn("text-xs font-bold px-2.5 py-0.5 rounded-full border", getStatusColor(apt.status === 'confirmed' ? 'Confirmado' : (apt.status === 'canceled' ? 'Cancelado' : (apt.status === 'completed' ? 'Concluído' : 'Pendente'))))}>
-                    {apt.status === 'confirmed' ? 'Confirmado' : (apt.status === 'canceled' ? 'Cancelado' : (apt.status === 'completed' ? 'Concluído' : 'Pendente'))}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
-                  <span className="flex items-center gap-1.5"><Phone className="w-4 h-4" /> {apt.patient?.phone}</span>
-                  <span className="flex items-center gap-1.5"><CalendarIcon className="w-4 h-4" /> {apt.procedure || 'Consulta'}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 md:w-56 shrink-0 justify-end">
-                <div className="flex flex-col items-end gap-1 mr-4">
-                  <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3" /> WhatsApp
-                  </span>
-                  <span className="text-xs font-semibold text-foreground truncate max-w-[120px]">-</span>
-                </div>
+            return (
+              <div key={apt.id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row gap-4 md:items-center shadow-sm hover:shadow-md transition-shadow">
                 
-                {/* Ações Rápidas */}
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="w-9 h-9 flex items-center justify-center rounded-md bg-muted hover:bg-red-100 hover:text-red-600 text-muted-foreground transition-colors" title="Cancelar">
-                    <XCircle className="w-5 h-5" />
+                {/* Bloco de Hora */}
+                <div className="w-full md:w-40 shrink-0">
+                  <div className="bg-blue-50 text-blue-600 font-bold px-4 py-3 rounded-lg flex items-center justify-center gap-2 text-lg border border-blue-100">
+                    <Clock className="w-5 h-5 opacity-80" /> {timeStr}
+                  </div>
+                </div>
+
+                {/* Info do Paciente */}
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-bold text-lg text-slate-900">{apt.patient?.name}</h3>
+                    <span className={cn("text-[11px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wide", getStatusColor(statusStr))}>
+                      {statusStr}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-5 text-sm text-slate-500">
+                    <span className="flex items-center gap-1.5"><Phone className="w-4 h-4 text-slate-400" /> {apt.patient?.phone}</span>
+                    <span className="flex items-center gap-1.5"><CalendarIcon className="w-4 h-4 text-slate-400" /> {apt.procedure || 'Consulta'}</span>
+                  </div>
+                </div>
+
+                {/* Ações (WhatsApp + Botões) */}
+                <div className="flex items-center gap-6 md:w-auto shrink-0 justify-end mt-4 md:mt-0">
+                  <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-green-600 transition-colors">
+                    <MessageSquare className="w-4 h-4" /> WhatsApp
                   </button>
-                  <button 
-                    onClick={() => handleMarkAsCompleted(apt)}
-                    className="w-9 h-9 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors" title="Marcar como Concluída"
-                  >
-                    <CheckCircle2 className="w-5 h-5" />
-                  </button>
+                  
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        const link = `${window.location.origin}/confirmar/${apt.id}`;
+                        navigator.clipboard.writeText(link);
+                        toast.success('Link copiado!');
+                      }}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 text-slate-500 transition-all shadow-sm" 
+                      title="Copiar Link Público"
+                    >
+                      <LinkIcon className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleCancelAppointment(apt.id)}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-100 hover:bg-red-50 hover:border-red-100 hover:text-red-600 text-slate-500 transition-all shadow-sm" 
+                      title="Cancelar Consulta"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleMarkAsCompleted(apt)}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-blue-50 border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm" 
+                      title="Marcar como Concluída"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </main>
+            );
+          })
+        )}
+      </div>
 
       <RecallModal 
         isOpen={isRecallModalOpen} 

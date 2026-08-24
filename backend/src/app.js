@@ -18,18 +18,12 @@ app.use(passport.initialize());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || 'dummy_id_to_avoid_crash',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_secret',
-    callbackURL: "http://localhost:3000/auth/google/callback"
+    callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`
   },
   function(accessToken, refreshToken, profile, cb) {
     return cb(null, profile);
   }
 ));
-
-// Fake Auth Middleware para MVP
-app.use((req, res, next) => {
-  req.clinicId = 'clinica-mock-123';
-  next();
-});
 
 // Registrar rotas
 app.use('/', routes);

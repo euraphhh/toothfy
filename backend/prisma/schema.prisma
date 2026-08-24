@@ -10,11 +10,9 @@ generator client {
 model Clinic {
   id                 String        @id @default(uuid())
   name               String
+  slug               String        @unique
   metaBusinessId     String?
   whatsappNumber     String?
-  subscriptionTier   String        @default("free") // free, pro, ultra
-  stripeCustomerId   String?       @unique
-  subscriptionStatus String?       // active, past_due, canceled
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -30,6 +28,15 @@ model Patient {
   clinic           Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   name             String
   phone            String
+  email            String        @default("")
+  cpf              String?
+  rg               String?
+  birthDate        DateTime?
+  cep              String?
+  address          String?
+  neighborhood     String?
+  city             String?
+  state            String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 

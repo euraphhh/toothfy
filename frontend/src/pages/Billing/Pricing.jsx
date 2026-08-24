@@ -28,7 +28,7 @@ const Pricing = () => {
     if (isWaitingPayment && targetTier) {
       interval = setInterval(async () => {
         try {
-          const response = await fetchApi('http://localhost:3000/billing/status');
+          const response = await fetchApi('/billing/status');
           if (response.ok) {
             const data = await response.json();
             if (data.subscriptionTier === targetTier && data.subscriptionStatus === 'active') {

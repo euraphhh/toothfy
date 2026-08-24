@@ -5,17 +5,24 @@ class DashboardController {
   async getMetrics(req, res) {
     try {
       const clinicId = req.user.clinicId;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const dateParam = req.query.date;
+      const today = dateParam ? new Date(`${dateParam}T00:00:00.000Z`) : new Date();
+      if (!dateParam) today.setHours(0, 0, 0, 0);
+      
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      // Total Appointments Today
+      // Total Appointments for selected date
       const totalAppointments = await prisma.appointment.count({
         where: {
           clinicId,
           date: { gte: today, lt: tomorrow }
         }
+      });
+
+      // Total Patients Ever
+      const totalPatients = await prisma.patient.count({
+        where: { clinicId }
       });
 
       // Confirmed Appointments Today
@@ -31,22 +38,24 @@ class DashboardController {
         ? Math.round((confirmedAppointments / totalAppointments) * 100) 
         : 0;
 
-      // Unconfirmed Appointments for Tomorrow (Needs Attention)
-      const unconfirmedTomorrow = await prisma.appointment.findMany({
+      // Unconfirmed Appointments for Tomorrow OR needs_attention
+      const attentionAppointments = await prisma.appointment.findMany({
         where: {
           clinicId,
-          date: { gte: tomorrow, lt: new Date(tomorrow.getTime() + 86400000) },
-          status: 'pending'
+          OR: [
+            { date: { gte: tomorrow, lt: new Date(tomorrow.getTime() + 86400000) }, status: 'pending' },
+            { status: 'needs_attention' }
+          ]
         },
         include: { patient: true }
       });
 
       // Map to attentionNeeded format
-      const attentionNeeded = unconfirmedTomorrow.map(apt => ({
+      const attentionNeeded = attentionAppointments.map(apt => ({
         id: apt.id,
         name: apt.patient.name,
-        reason: "Consulta amanhã (Pendente)",
-        time: "Verifique"
+        reason: apt.status === 'needs_attention' ? "Mensagem não compreendida (Atenção)" : "Consulta amanhã (Pendente)",
+        time: apt.status === 'needs_attention' ? "Urgente" : "Verifique"
       }));
 
       // Today's appointments list
@@ -68,9 +77,20 @@ class DashboardController {
         }
       });
 
+      // Canceled Appointments (selected date)
+      const canceledAppointments = await prisma.appointment.count({
+        where: {
+          clinicId,
+          date: { gte: today, lt: tomorrow },
+          status: 'canceled'
+        }
+      });
+
       res.json({
         metrics: {
           totalAppointments,
+          totalPatients,
+          canceledAppointments,
           confirmationRate: `${confirmationRate}%`,
           messagesSent
         },
@@ -79,7 +99,7 @@ class DashboardController {
           id: a.id,
           name: a.patient.name,
           time: a.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          status: a.status === 'confirmed' ? 'Confirmado' : (a.status === 'canceled' ? 'Cancelado' : (a.status === 'completed' ? 'Concluído' : 'Pendente')),
+          status: aptStatusLabel(a.status),
           procedure: a.procedure || 'Consulta'
         }))
       });
@@ -88,6 +108,14 @@ class DashboardController {
       res.status(500).json({ error: error.message });
     }
   }
+}
+
+function aptStatusLabel(status) {
+  if (status === 'confirmed') return 'Confirmado';
+  if (status === 'canceled') return 'Cancelado';
+  if (status === 'completed') return 'Concluído';
+  if (status === 'needs_attention') return 'Requer Atenção';
+  return 'Pendente';
 }
 
 module.exports = new DashboardController();

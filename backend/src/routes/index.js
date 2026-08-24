@@ -6,22 +6,44 @@ const AppointmentController = require('../controllers/AppointmentController');
 const AuthController = require('../controllers/AuthController');
 const DashboardController = require('../controllers/DashboardController');
 const ClinicController = require('../controllers/ClinicController');
+const MessageController = require('../controllers/MessageController');
+const PublicController = require('../controllers/PublicController');
+const WebhookController = require('../controllers/WebhookController');
+const rateLimit = require('express-rate-limit');
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Muitas tentativas. Tente novamente mais tarde.' }
+});
 
 const routes = Router();
 
 routes.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Auth
-routes.post('/auth/register/request-code', AuthController.requestCode);
-routes.post('/auth/register/verify-code', AuthController.verifyCode);
+routes.post('/auth/register/request-code', authLimiter, AuthController.requestCode);
+routes.post('/auth/register/verify-code', authLimiter, AuthController.verifyCode);
 routes.post('/auth/register/complete', AuthController.completeRegistration);
-routes.post('/auth/login', AuthController.login);
-routes.post('/auth/forgot-password', AuthController.forgotPassword);
-routes.post('/auth/reset-password', AuthController.resetPassword);
+routes.post('/auth/login', authLimiter, AuthController.login);
+routes.post('/auth/forgot-password', authLimiter, AuthController.forgotPassword);
+routes.post('/auth/reset-password', authLimiter, AuthController.resetPassword);
+
+// Public Patient Actions (Confirmação de Consulta)
+routes.get('/public/appointments/:id', PublicController.getAppointmentDetails);
+routes.put('/public/appointments/:id/confirm', PublicController.updateAppointmentStatus);
+
+// Meta WhatsApp Webhook
+routes.get('/webhooks/meta', WebhookController.verify);
+routes.post('/webhooks/meta', WebhookController.receive);
 
 // Google OAuth
 routes.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-routes.get('/auth/google/callback', passport.authenticate('google', { session: false, failureRedirect: 'http://localhost:5173/login?error=oauth_failed' }), AuthController.googleCallback);
+routes.get('/auth/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=oauth_failed` }), AuthController.googleCallback);
+
+// Clínicas (Públicas - para Subdomínio e Cadastro)
+routes.get('/clinics/check-slug', ClinicController.checkSlug);
+routes.get('/clinics/slug/:slug', ClinicController.getBySlug);
 
 // Rotas Protegidas (Requer JWT)
 routes.use(authMiddleware);
@@ -29,13 +51,12 @@ routes.use(authMiddleware);
 // Dashboard
 routes.get('/dashboard', DashboardController.getMetrics);
 
-// Billing
-const billingRoutes = require('./billing.routes');
-routes.use('/billing', billingRoutes);
-
 // Clinic Settings
 routes.get('/clinic/settings', ClinicController.getSettings);
 routes.put('/clinic/settings', ClinicController.updateSettings);
+
+// Logs
+routes.get('/logs', MessageController.list);
 
 // Patients
 routes.post('/patients', PatientController.create);
@@ -44,7 +65,6 @@ routes.get('/patients', PatientController.list);
 // Appointments
 routes.post('/appointments', AppointmentController.create);
 routes.get('/appointments', AppointmentController.list);
-// We will need a way to update status, but for now we'll mock it if not implemented in controller, wait, let's just add it if we added it, but I didn't add it to AppointmentController. Let's just add it here and I will add it to the controller later.
 routes.put('/appointments/:id/status', async (req, res) => {
   const { PrismaClient } = require('@prisma/client');
   const prisma = new PrismaClient();

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
+import { fetchApi } from '../../lib/auth';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -28,7 +29,7 @@ export default function ResetPassword() {
     
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/auth/reset-password', {
+      const res = await fetchApi('/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: password })

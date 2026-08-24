@@ -1,15 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, ArrowRight, ShieldCheck } from 'lucide-react';
-import { setToken } from '../../lib/auth';
+import { fetchApi, setToken } from '../../lib/auth';
 import { toast } from 'sonner';
 
 export default function OAuthRegister() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({ name: '', email: '', googleId: '', clinicName: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', googleId: '', clinicName: '', slug: '' });
   const [loading, setLoading] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState(null);
+  const [checkingSlug, setCheckingSlug] = useState(false);
+
+  const checkSlug = async (slugVal) => {
+    if (!slugVal) return setSlugAvailable(null);
+    setCheckingSlug(true);
+    try {
+      const res = await fetchApi(`/clinics/check-slug?slug=${slugVal}`);
+      const data = await res.json();
+      setSlugAvailable(data.available);
+    } catch (e) {
+      setSlugAvailable(null);
+    } finally {
+      setCheckingSlug(false);
+    }
+  };
+
+  const handleSlugChange = (e) => {
+    const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setFormData({ ...formData, slug: val });
+    setSlugAvailable(null);
+  };
 
   useEffect(() => {
     const qEmail = searchParams.get('email');
@@ -26,8 +48,12 @@ export default function OAuthRegister() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.clinicName) {
-      toast.error('Informe o nome da clínica');
+    if (!formData.clinicName || !formData.slug) {
+      toast.error('Informe o nome da clínica e escolha seu link.');
+      return;
+    }
+    if (slugAvailable === false) {
+      toast.error('O link escolhido já está em uso.');
       return;
     }
 
@@ -36,12 +62,13 @@ export default function OAuthRegister() {
       // Gera senha aleatória forte pois é OAuth
       const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) + 'G!1a';
       
-      const res = await fetch('http://localhost:3000/auth/register/complete', {
+      const res = await fetchApi('/auth/register/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           name: formData.name, 
           clinicName: formData.clinicName, 
+          slug: formData.slug,
           email: formData.email, 
           password: randomPassword, 
           googleId: formData.googleId 
@@ -88,6 +115,31 @@ export default function OAuthRegister() {
               />
             </div>
             <p className="text-xs text-muted-foreground pt-1">Este será o espaço principal para gerenciar seus agendamentos.</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">Link Personalizado (Username)</label>
+            <div className="flex rounded-md shadow-sm">
+              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground sm:text-sm">
+                https://
+              </span>
+              <input 
+                type="text" 
+                value={formData.slug}
+                onChange={handleSlugChange}
+                onBlur={(e) => checkSlug(e.target.value)}
+                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none border border-input text-sm bg-background focus:ring-2 focus:ring-blue-600 transition-all"
+                placeholder="minhaclinica" 
+              />
+              <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-input bg-muted text-muted-foreground sm:text-sm">
+                .toothify.com
+              </span>
+            </div>
+            <div className="h-4">
+              {checkingSlug && <p className="text-xs text-muted-foreground">Verificando disponibilidade...</p>}
+              {slugAvailable === true && <p className="text-xs text-green-600 dark:text-green-500 font-medium">Link disponível!</p>}
+              {slugAvailable === false && <p className="text-xs text-red-600 dark:text-red-500 font-medium">Este link já está em uso por outra clínica.</p>}
+            </div>
           </div>
 
           <div className="pt-4">

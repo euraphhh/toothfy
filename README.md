@@ -1,40 +1,36 @@
-# SaaS Odonto (Toothfy)
+# ToothiFy - SaaS B2B para Clínicas Odontológicas 🦷
 
-Uma plataforma completa de gestão e automação para Clínicas Odontológicas focada em zerar faltas com Lembretes pelo WhatsApp e Auto-Recall de pacientes.
+Uma plataforma premium de gestão e automação para Clínicas Odontológicas focada em zerar faltas com **Lembretes Automatizados pelo WhatsApp**, **Auto-Recall de pacientes** e **Dashboard Inteligente**.
 
-## 🚀 Funcionalidades
+## Principais Funcionalidades (MVP)
+- **Multi-Tenant Nativo**: Cada clínica possui seu próprio subdomínio exclusivo (White-Label) e ambiente isolado.
+- **Landing Page SaaS**: Design Premium (Bento Box) focado em conversão.
+- **Motor de WhatsApp Automático**: 
+  - Lembretes programados (3 dias antes e 1 dia antes).
+  - Reconhecimento Inteligente (NLP básico) para respostas como "Sim", "Não", "Confirmar".
+- **Sistema de Auto-Recall**: Configuração de retornos periódicos (ex: 6 meses).
+- **Dashboard e Agenda**: Visão unificada da clínica.
+- **Gestão de Pacientes**: CRUD completo com integração ViaCEP.
+- **Autenticação**: Login local seguro e Google OAuth.
 
-- **Dashboard Inteligente**: Métricas de consultas, taxa de confirmação e ações necessárias em tempo real.
-- **Agenda Otimizada**: Visão Kanban diária, separando as consultas por status de confirmação.
-- **Automação de WhatsApp**: Disparo automático de mensagens para confirmação de consultas (3 dias e 1 dia antes).
-- **Auto-Recall Programado**: Retorno automático de pacientes (ex: revisão a cada 6 meses) sem esforço da secretária.
-- **Gestão de Pacientes**: Prontuário, histórico de agendamentos e status da comunicação.
-- **Faturamento / Assinaturas**: Integração completa com Stripe para os planos Basic, Pro e Ultra. Fluxo de downgrade anti-churn inteligente.
+## 🚀 RoadMap (Próximos passos)
+- **Implementação de Redis**: Cache para otimização de consultas pesadas e gerenciamento de filas de mensagens.
+- **White-Label Avançado**: Opções de customização de marca (cores, logo e domínios próprios) para os clientes.
+- **Landing Page Dinâmica**: Sistema de CMS para edição rápida de conteúdo.
+- **Subdomínios Dinâmicos**: Automação de CNAMEs via Cloudflare API.
 
 ## 🛠 Tecnologias Utilizadas
 
-### Backend
-- **Node.js** com **Express**
-- **Prisma ORM** (PostgreSQL)
-- **Autenticação**: JWT, bcrypt e Google OAuth 2.0
-- **Stripe API**: Controle de assinaturas e Webhooks
-
-### Frontend
-- **React.js** (Vite)
-- **Tailwind CSS** para estilização utilitária
-- **React Router DOM** para roteamento
-- **Lucide React** para ícones
+- **Sonner** (Toasts)
 
 ### Infraestrutura
-- **Docker & Docker Compose**: Orquestração de containers (Backend, Frontend e Banco de Dados)
-- **PostgreSQL**: Banco de dados relacional e escalável
+- **Docker & Docker Compose**: Orquestração completa.
+- **PostgreSQL**: Banco de dados relacional (isolado por volumes Docker).
 
 ## ⚙️ Pré-requisitos
 
-Para rodar o projeto localmente, certifique-se de ter instalado em sua máquina:
+Para rodar o projeto localmente, você só precisará de:
 - [Docker e Docker Compose](https://www.docker.com/)
-- [Node.js](https://nodejs.org/) (opcional, para rodar sem Docker)
-- [Stripe CLI](https://stripe.com/docs/stripe-cli) (para testar webhooks localmente)
 
 ## 📦 Como rodar localmente
 
@@ -45,50 +41,54 @@ cd saas-odonto
 ```
 
 2. Configure as variáveis de ambiente:
-   - Navegue até a pasta `backend/` e crie um arquivo `.env` baseado no `.env.example` (se houver) ou adicione as chaves necessárias (veja abaixo).
+   - Na pasta `backend/`, crie ou edite o `.env` (Use a referência abaixo).
+   - Na pasta `frontend/`, crie ou edite o `.env`.
 
-3. Suba os containers com o Docker Compose:
+3. Suba a infraestrutura:
 ```bash
 docker compose up -d --build
 ```
-Isso irá iniciar três containers:
+Isso iniciará:
 - `saas_odonto_db` (PostgreSQL na porta 5432)
-- `saas_odonto_backend` (Node API na porta 3000)
-- `saas_odonto_frontend` (React/Vite na porta 5173)
+- `saas_odonto_backend` (Node API e Workers na porta 3000)
+- `saas_odonto_frontend` (React na porta 5173)
 
-4. Acesse a aplicação:
-- Frontend: [http://localhost:5173](http://localhost:5173)
-- API Backend: [http://localhost:3000](http://localhost:3000)
-
-## 💳 Testando Pagamentos Localmente (Stripe Webhooks)
-
-Para que o sistema de pagamentos funcione localmente (atualizando as contas após o pagamento), você precisa redirecionar os webhooks da Stripe para a sua API rodando no Docker.
-
-1. Faça o login na Stripe CLI:
+4. Rode o Seed para criar sua conta:
 ```bash
-stripe login
+docker compose exec backend node scripts/seed.js
 ```
+O login será `euraphh@gmail.com` com a senha `123456`.
 
-2. Redirecione os eventos para o webhook do backend:
-```bash
-stripe listen --forward-to localhost:3000/billing/webhook
-```
-*A Stripe vai te fornecer uma chave `whsec_...` no terminal. Copie essa chave e cole no seu arquivo `backend/.env` na variável `STRIPE_WEBHOOK_SECRET`, e então reinicie o backend.*
+5. Acesse:
+- App: [http://localhost:5173](http://localhost:5173)
 
-## 🔒 Variáveis de Ambiente Necessárias (Backend)
+## 🔒 Variáveis de Ambiente Necessárias
 
-Crie um arquivo `.env` na pasta `backend/` com as seguintes variáveis:
+### `backend/.env`
 ```env
 PORT=3000
-DATABASE_URL="postgresql://root:rootpassword@db:5432/saas_odonto"
-JWT_SECRET="sua_chave_secreta"
+DATABASE_URL="postgresql://root:rootpassword@db:5432/saas_odonto?schema=public"
+
+# Segurança
+JWT_SECRET="sua_chave_jwt_aqui"
 GOOGLE_CLIENT_ID="seu_client_id"
 GOOGLE_CLIENT_SECRET="seu_client_secret"
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-STRIPE_PRICE_PRO_MONTHLY="price_..."
-STRIPE_PRICE_PRO_ANNUAL="price_..."
-STRIPE_PRICE_ULTRA_MONTHLY="price_..."
-STRIPE_PRICE_ULTRA_ANNUAL="price_..."
-FRONTEND_URL="http://localhost:5173"
+
+# Motor WhatsApp (Meta Cloud API)
+META_PHONE_ID="id_do_telefone_meta"
+META_ACCESS_TOKEN="token_do_app_meta"
+META_VERIFY_TOKEN="toothify_secret_token" # Usado no Webhook
 ```
+
+### `frontend/.env`
+```env
+# URL da sua API Backend
+VITE_API_URL=http://localhost:3000
+```
+
+## 🎧 Configurando o Webhook (Meta For Developers)
+Para que as respostas dos clientes mudem os status na plataforma:
+1. No painel do seu app na Meta, vá em **Webhooks**.
+2. Configure a URL de callback para `https://seu-dominio.com/api/webhooks/meta`.
+3. O Token de verificação deve ser o mesmo de `META_VERIFY_TOKEN` (padrão: `toothify_secret_token`).
+4. Se inscreva no evento `messages`.

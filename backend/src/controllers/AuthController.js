@@ -5,7 +5,11 @@ const crypto = require('crypto');
 const prisma = new PrismaClient();
 const { sendEmail } = require('../services/emailService');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_for_saas_odonto_mvp';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not set.');
+}
 
 class AuthController {
   // Etapa 1: Solicitar código
@@ -71,13 +75,13 @@ class AuthController {
   // Etapa 3: Finalizar
   async completeRegistration(req, res) {
     try {
-      const { name, clinicName, email, password, googleId } = req.body;
+      const { name, clinicName, slug, email, password, googleId } = req.body;
       
       const passwordHash = await bcrypt.hash(password, 10);
 
       const result = await prisma.$transaction(async (tx) => {
         const clinic = await tx.clinic.create({
-          data: { name: clinicName }
+          data: { name: clinicName, slug }
         });
 
         const user = await tx.user.create({
@@ -107,11 +111,20 @@ class AuthController {
   // Login
   async login(req, res) {
     try {
-      const { email, password } = req.body;
+      const { email, password, slug } = req.body;
 
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findUnique({ 
+        where: { email },
+        include: { clinic: true }
+      });
+      
       if (!user) {
         return res.status(401).json({ error: 'Credenciais inválidas' });
+      }
+
+      // Validação de Segurança Multi-Tenant (White-label)
+      if (slug && user.clinic.slug !== slug) {
+        return res.status(403).json({ error: 'Esta conta não pertence a esta clínica.' });
       }
 
       const isValid = await bcrypt.compare(password, user.passwordHash);
@@ -153,7 +166,8 @@ class AuthController {
         }
       });
 
-      const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+      const frontendUrl = process.env.FRONTEND_URL;
+      const resetLink = `${frontendUrl}/reset-password?token=${token}`;
       const htmlContent = `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
           <h2>Recuperação de Senha</h2>
@@ -242,18 +256,21 @@ class AuthController {
           { expiresIn: '7d' }
         );
 
+        const frontendUrl = process.env.FRONTEND_URL;
         // Redireciona para o Front-end com sucesso
-        return res.redirect(`http://localhost:5173/oauth/success?token=${token}`);
+        return res.redirect(`${frontendUrl}/oauth/success?token=${token}`);
       }
 
       // Se NÃO achou, redireciona para a tela de registro dedicada do OAuth
       const encodedEmail = encodeURIComponent(email);
       const encodedName = encodeURIComponent(name);
-      return res.redirect(`http://localhost:5173/oauth/register?email=${encodedEmail}&name=${encodedName}&googleId=${googleId}`);
+      const frontendUrl = process.env.FRONTEND_URL;
+      return res.redirect(`${frontendUrl}/oauth/register?email=${encodedEmail}&name=${encodedName}&googleId=${googleId}`);
       
     } catch (error) {
       console.error('[Google Auth Error]:', error);
-      res.redirect('http://localhost:5173/login?error=oauth_failed');
+      const frontendUrl = process.env.FRONTEND_URL;
+      res.redirect(`${frontendUrl}/login?error=oauth_failed`);
     }
   }
 }

@@ -1,23 +1,28 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
-import { setToken } from '../../lib/auth';
+import { fetchApi, setToken, API_URL } from '../../lib/auth';
 import { toast } from 'sonner';
+import { useClinic } from '../../contexts/ClinicContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { clinic } = useClinic();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/auth/login', {
+      const payload = { email, password };
+      if (clinic) payload.slug = clinic.slug;
+      
+      const res = await fetchApi('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       
@@ -38,7 +43,9 @@ export default function Login() {
   return (
     <div className="w-full flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-3 mb-2">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Bem-vindo de volta</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          {clinic ? `Bem-vindo(a) à ${clinic.name}` : 'Bem-vindo de volta'}
+        </h1>
         <p className="text-sm text-muted-foreground">
           Acesse sua conta para gerenciar seus agendamentos
         </p>
@@ -46,7 +53,7 @@ export default function Login() {
 
       <div className="grid gap-4">
         <a 
-          href="http://localhost:3000/auth/google"
+          href={`${API_URL}/auth/google`}
           className="flex items-center justify-center gap-2 h-10 w-full rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">

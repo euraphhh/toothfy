@@ -3,6 +3,7 @@ import { Users, Search, Plus, Phone, Calendar as CalendarIcon, UserPlus, X, Mail
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 import { fetchApi } from '../../lib/auth';
+import { formatCPF, formatRG, formatCEP, formatPhone } from '../../lib/formatters';
 
 export default function Pacientes() {
   const [pacientes, setPacientes] = useState([]);
@@ -11,7 +12,28 @@ export default function Pacientes() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   
-  const [newPatient, setNewPatient] = useState({ name: '', phone: '', email: '' });
+  const [newPatient, setNewPatient] = useState({ name: '', phone: '', email: '', cpf: '', rg: '', birthDate: '', cep: '', address: '', neighborhood: '', city: '', state: '' });
+
+  const handleCepBlur = async (e) => {
+    const cep = e.target.value.replace(/\D/g, '');
+    if (cep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setNewPatient(prev => ({
+            ...prev,
+            address: data.logradouro,
+            neighborhood: data.bairro,
+            city: data.localidade,
+            state: data.uf
+          }));
+        }
+      } catch (err) {
+        console.error('Erro ao buscar CEP', err);
+      }
+    }
+  };
 
   const loadPatients = async () => {
     setLoadingData(true);
@@ -36,8 +58,8 @@ export default function Pacientes() {
 
   const handleCreatePatient = async (e) => {
     e.preventDefault();
-    if (!newPatient.name || !newPatient.phone) {
-      toast.error('Nome e telefone são obrigatórios.');
+    if (!newPatient.name || !newPatient.phone || !newPatient.email) {
+      toast.error('Nome, telefone e e-mail são obrigatórios.');
       return;
     }
 
@@ -50,7 +72,7 @@ export default function Pacientes() {
       if (res.ok) {
         toast.success('Paciente cadastrado com sucesso!');
         setIsNewPatientModalOpen(false);
-        setNewPatient({ name: '', phone: '', email: '' });
+        setNewPatient({ name: '', phone: '', email: '', cpf: '', rg: '', birthDate: '', cep: '', address: '', neighborhood: '', city: '', state: '' });
         loadPatients(); // Recarrega a lista
       } else {
         toast.error('Erro ao cadastrar paciente.');
@@ -165,44 +187,131 @@ export default function Pacientes() {
               </button>
             </div>
 
-            <form onSubmit={handleCreatePatient}>
-              <div className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">Nome Completo <span className="text-red-500">*</span></label>
-                  <input 
-                    autoFocus
-                    value={newPatient.name} 
-                    onChange={e => setNewPatient({...newPatient, name: e.target.value})}
-                    type="text" 
-                    placeholder="Ex: João da Silva" 
-                    className="w-full h-10 border border-input rounded-md px-3 text-sm bg-background transition-all focus:ring-2 focus:ring-blue-600" 
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">Telefone (WhatsApp) <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <form onSubmit={handleCreatePatient} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 overflow-y-auto space-y-4 max-h-[70vh]">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Nome Completo <span className="text-red-500">*</span></label>
                     <input 
-                      value={newPatient.phone} 
-                      onChange={e => setNewPatient({...newPatient, phone: e.target.value})}
+                      autoFocus
+                      value={newPatient.name} 
+                      onChange={e => setNewPatient({...newPatient, name: e.target.value})}
                       type="text" 
-                      placeholder="(11) 90000-0000" 
-                      className="w-full h-10 pl-10 border border-input rounded-md px-3 text-sm bg-background transition-all focus:ring-2 focus:ring-blue-600" 
+                      placeholder="Ex: João da Silva" 
+                      className="w-full h-10 border border-input rounded-md px-3 text-sm bg-background transition-all focus:ring-2 focus:ring-blue-600" 
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Telefone (WhatsApp) <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <input 
+                        value={newPatient.phone} 
+                        onChange={e => setNewPatient({...newPatient, phone: formatPhone(e.target.value)})}
+                        type="text" 
+                        placeholder="(11) 90000-0000" 
+                        className="w-full h-10 pl-10 border border-input rounded-md px-3 text-sm bg-background transition-all focus:ring-2 focus:ring-blue-600" 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Email <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <input 
+                        value={newPatient.email} 
+                        onChange={e => setNewPatient({...newPatient, email: e.target.value})}
+                        type="email" 
+                        placeholder="joao@email.com" 
+                        className="w-full h-10 pl-10 border border-input rounded-md px-3 text-sm bg-background transition-all focus:ring-2 focus:ring-blue-600" 
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">Data de Nascimento</label>
+                    <input 
+                      value={newPatient.birthDate} 
+                      onChange={e => setNewPatient({...newPatient, birthDate: e.target.value})}
+                      type="date" 
+                      className="w-full h-10 border border-input rounded-md px-3 text-sm bg-background focus:ring-2 focus:ring-blue-600" 
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">Email <span className="text-muted-foreground font-normal">(Opcional)</span></label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">CPF</label>
                     <input 
-                      value={newPatient.email} 
-                      onChange={e => setNewPatient({...newPatient, email: e.target.value})}
-                      type="email" 
-                      placeholder="joao@email.com" 
-                      className="w-full h-10 pl-10 border border-input rounded-md px-3 text-sm bg-background transition-all focus:ring-2 focus:ring-blue-600" 
+                      value={newPatient.cpf} 
+                      onChange={e => setNewPatient({...newPatient, cpf: formatCPF(e.target.value)})}
+                      type="text" placeholder="000.000.000-00" 
+                      className="w-full h-10 border border-input rounded-md px-3 text-sm bg-background focus:ring-2 focus:ring-blue-600" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold">RG</label>
+                    <input 
+                      value={newPatient.rg} 
+                      onChange={e => setNewPatient({...newPatient, rg: formatRG(e.target.value)})}
+                      type="text" placeholder="00000000-0" 
+                      className="w-full h-10 border border-input rounded-md px-3 text-sm bg-background focus:ring-2 focus:ring-blue-600" 
+                    />
+                  </div>
+                </div>
+
+                <h4 className="text-sm font-semibold text-muted-foreground mt-4 mb-2">Endereço</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold">CEP</label>
+                    <input 
+                      value={newPatient.cep} 
+                      onChange={e => setNewPatient({...newPatient, cep: formatCEP(e.target.value)})}
+                      onBlur={handleCepBlur}
+                      type="text" placeholder="00000-000" 
+                      className="w-full h-9 border border-input rounded-md px-3 text-xs bg-background focus:ring-2 focus:ring-blue-600" 
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <label className="text-xs font-semibold">Rua / Logradouro</label>
+                    <input 
+                      value={newPatient.address} 
+                      onChange={e => setNewPatient({...newPatient, address: e.target.value})}
+                      type="text" placeholder="Rua das Flores, 123" 
+                      className="w-full h-9 border border-input rounded-md px-3 text-xs bg-background focus:ring-2 focus:ring-blue-600" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold">Bairro</label>
+                    <input 
+                      value={newPatient.neighborhood} 
+                      onChange={e => setNewPatient({...newPatient, neighborhood: e.target.value})}
+                      type="text" placeholder="Centro" 
+                      className="w-full h-9 border border-input rounded-md px-3 text-xs bg-background focus:ring-2 focus:ring-blue-600" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold">Cidade</label>
+                    <input 
+                      value={newPatient.city} 
+                      onChange={e => setNewPatient({...newPatient, city: e.target.value})}
+                      type="text" placeholder="São Paulo" 
+                      className="w-full h-9 border border-input rounded-md px-3 text-xs bg-background focus:ring-2 focus:ring-blue-600" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold">Estado</label>
+                    <input 
+                      value={newPatient.state} 
+                      onChange={e => setNewPatient({...newPatient, state: e.target.value})}
+                      type="text" placeholder="SP" maxLength="2"
+                      className="w-full h-9 border border-input rounded-md px-3 text-xs bg-background focus:ring-2 focus:ring-blue-600" 
                     />
                   </div>
                 </div>

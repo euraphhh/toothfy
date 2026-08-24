@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Users, CalendarCheck, MessageCircle, AlertCircle, CalendarClock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import { Users, CalendarCheck, MessageCircle, MoreHorizontal, Plus, Calendar as CalendarIcon, Lightbulb, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { Link } from 'react-router-dom';
 import { fetchApi } from '../../lib/auth';
 import { toast } from 'sonner';
 
 export default function Dashboard() {
+  const { openNewAppointment } = useOutletContext();
   const [data, setData] = useState({
-    metrics: { totalAppointments: 0, confirmationRate: "0%", messagesSent: 0 },
+    metrics: { totalAppointments: 0, confirmationRate: "0%", messagesSent: 0, totalPatients: 0, canceledAppointments: 0 },
     attentionNeeded: [],
     todayAppointments: []
   });
   const [loading, setLoading] = useState(true);
   const [upgradedTier, setUpgradedTier] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
-    // Check for new upgrade via localStorage or URL
     const searchParams = new URLSearchParams(window.location.search);
     const upgradedFromUrl = searchParams.get('upgraded');
     const tierFromUrl = searchParams.get('tier');
@@ -26,82 +27,183 @@ export default function Dashboard() {
     if (tier) {
       setUpgradedTier(tier);
       localStorage.removeItem('justUpgraded');
-      
-      // Clean up URL if we got it from there
-      if (upgradedFromUrl) {
-        window.history.replaceState({}, '', window.location.pathname);
-      }
+      if (upgradedFromUrl) window.history.replaceState({}, '', window.location.pathname);
     }
 
-    fetchApi('/dashboard')
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    fetchApi(`/dashboard?date=${dateStr}`)
       .then(res => res.json())
       .then(d => {
         if (!d.error) setData(d);
       })
       .catch(() => toast.error('Erro ao carregar painel'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedDate]);
 
-  const metrics = [
-    { title: "Consultas Hoje", value: data.metrics.totalAppointments, icon: CalendarClock, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30" },
-    { title: "Taxa de Confirmação", value: data.metrics.confirmationRate, icon: CalendarCheck, color: "text-green-600", bg: "bg-green-100 dark:bg-green-900/30" },
-    { title: "Lembretes Enviados", value: data.metrics.messagesSent, icon: MessageCircle, color: "text-purple-600", bg: "bg-purple-100 dark:bg-purple-900/30" },
-  ];
+  // Generate date array for the top calendar
+  const calendarDays = Array.from({length: 7}, (_, i) => {
+    const d = new Date(selectedDate);
+    d.setDate(selectedDate.getDate() - 3 + i);
+    return { 
+      day: d.getDate().toString().padStart(2, '0'), 
+      fullDate: d,
+      active: i === 3 
+    };
+  });
+
   return (
-    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500 font-sans">
       
       {/* Header/Greeting */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Bom dia, Clínica Odonto Prime! 👋</h1>
-        <p className="text-muted-foreground mt-1">Aqui está o resumo do seu dia.</p>
+      <div className="flex items-center justify-between pt-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Bom dia, Clínica Odonto Prime! 👋</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center justify-center p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-600">
+            <CalendarIcon className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={openNewAppointment}
+            className="flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-slate-900/20"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar Consulta
+          </button>
+        </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {metrics.map((item, i) => (
-          <div key={i} className="bg-card border border-border p-6 rounded-xl shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
-            <div className={cn("w-14 h-14 rounded-full flex items-center justify-center", item.bg)}>
-              <item.icon className={cn("w-7 h-7", item.color)} />
+      {/* Metrics Grid (4 columns like Medoria) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Metric 1 */}
+        <div className="bg-white p-5 rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-semibold text-slate-400 tracking-wide uppercase">Pacientes Totais</p>
+            <MoreHorizontal className="w-4 h-4 text-slate-300" />
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-3xl font-bold text-slate-900">{data.metrics.totalPatients}</h2>
+              <span className="text-sm font-medium text-slate-500">Pacientes</span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">{item.title}</p>
-              <h2 className="text-3xl font-bold">{item.value}</h2>
+            <p className="text-xs font-semibold text-green-500 mt-1">Dados reais</p>
+          </div>
+        </div>
+
+        {/* Metric 2 */}
+        <div className="bg-white p-5 rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-semibold text-slate-400 tracking-wide uppercase">Consultas Hoje</p>
+            <MoreHorizontal className="w-4 h-4 text-slate-300" />
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-3xl font-bold text-slate-900">{data.metrics.totalAppointments}</h2>
+              <span className="text-sm font-medium text-slate-500">Consultas</span>
+            </div>
+            <div className="flex gap-3 mt-1">
+              <p className="text-xs font-semibold text-amber-500">{data.todayAppointments.filter(a => a.status === 'Pendente').length} pendentes</p>
+              <p className="text-xs font-semibold text-red-500">{data.todayAppointments.filter(a => a.status === 'Cancelado').length} canceladas</p>
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* Metric 3 */}
+        <div className="bg-white p-5 rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-semibold text-slate-400 tracking-wide uppercase">Cancelamentos Totais</p>
+            <MoreHorizontal className="w-4 h-4 text-slate-300" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-slate-900">{data.metrics.canceledAppointments}</h2>
+            <p className="text-xs font-semibold text-red-500 mt-1">Faltas identificadas</p>
+          </div>
+        </div>
+
+        {/* Metric 4 */}
+        <div className="bg-white p-5 rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-semibold text-slate-400 tracking-wide uppercase">Lembretes Enviados</p>
+            <MoreHorizontal className="w-4 h-4 text-slate-300" />
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-3xl font-bold text-slate-900">{data.metrics.messagesSent}</h2>
+              <span className="text-sm font-medium text-slate-500">Mensagens</span>
+            </div>
+            <p className="text-xs font-semibold text-blue-500 mt-1">Taxa {data.metrics.confirmationRate}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Atenção Necessária */}
-        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-border flex items-center justify-between bg-muted/20">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-500" />
-              <h3 className="font-semibold text-lg">Atenção Necessária</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Calendário e Consultas (Ocupa 2/3) */}
+        <div className="lg:col-span-2 bg-white rounded-[24px] shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-bold text-lg text-slate-900">Calendário de Consultas</h3>
+            <div className="px-4 py-1.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-colors capitalize">
+              {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })} ▾
             </div>
-            <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold px-2.5 py-0.5 rounded-full">
-              {data.attentionNeeded.length} pendências
-            </span>
           </div>
-          
-          <div className="p-0 flex-1">
-            {data.attentionNeeded.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                <CheckCircle2 className="w-10 h-10 text-green-500 mb-2 opacity-50" />
-                <p>Tudo sob controle por aqui.</p>
+
+          {/* Date Picker Horizontal Row */}
+          <div className="flex items-center justify-between mb-8 px-4 bg-slate-50/50 rounded-2xl py-3">
+            <button className="text-slate-400 hover:text-slate-700" onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}>❮</button>
+            {calendarDays.map((d, i) => (
+              <div 
+                key={i} 
+                onClick={() => setSelectedDate(d.fullDate)}
+                className={cn(
+                "w-12 h-10 flex items-center justify-center rounded-xl font-bold text-sm cursor-pointer transition-all",
+                d.active ? "bg-slate-900 text-white shadow-md shadow-slate-900/20" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              )}>
+                {d.day}
               </div>
+            ))}
+            <button className="text-slate-400 hover:text-slate-700" onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))}>❯</button>
+          </div>
+
+          {/* Lista de Consultas (Timeline style) */}
+          <div className="flex-1 overflow-y-auto pr-2">
+            {data.todayAppointments.length === 0 ? (
+               <div className="flex flex-col items-center justify-center h-48 text-slate-400">
+                 <p className="font-medium">Sem consultas para hoje.</p>
+               </div>
             ) : (
-              <ul className="divide-y divide-border">
-                {data.attentionNeeded.map((item) => (
-                  <li key={item.id} className="p-4 hover:bg-muted/50 transition-colors flex items-center gap-4 cursor-pointer">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-700 dark:text-amber-400 font-bold text-sm shrink-0">
-                      {item.name.substring(0, 2).toUpperCase()}
+              <ul className="space-y-3">
+                {data.todayAppointments.map((apt) => (
+                  <li key={apt.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-2xl transition-colors border border-transparent hover:border-slate-100">
+                    <div className="flex items-center gap-4 w-1/3">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm shrink-0 shadow-sm border border-slate-200/50">
+                        {apt.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <p className="font-bold text-sm text-slate-900">{apt.name}</p>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">{item.reason}</p>
+                    
+                    <div className="w-1/3 text-left">
+                      <p className="font-semibold text-sm text-slate-700 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> 
+                        {apt.procedure || 'Consulta Padrão'}
+                      </p>
+                      <p className="text-xs font-semibold text-slate-400 mt-1 flex items-center gap-1.5">
+                        <CalendarIcon className="w-3.5 h-3.5" /> {apt.time}
+                      </p>
                     </div>
-                    <span className="text-xs text-muted-foreground shrink-0">{item.time}</span>
+
+                    <div className="w-1/4 flex justify-end items-center gap-6">
+                      <span className={cn(
+                        "text-[11px] font-bold px-3 py-1.5 rounded-full border tracking-wide uppercase",
+                        apt.status === 'Confirmado' ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
+                        apt.status === 'Cancelado' ? "bg-rose-50 text-rose-600 border-rose-200" :
+                        "bg-amber-50 text-amber-600 border-amber-200"
+                      )}>
+                        {apt.status}
+                      </span>
+                      <button className="text-slate-300 hover:text-slate-600 transition-colors">
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -109,107 +211,72 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Resumo da Agenda */}
-        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-border flex items-center justify-between">
-            <h3 className="font-semibold text-lg">Agenda de Hoje</h3>
-            <Link to="/agenda" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 group">
-              Ver tudo <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+        {/* Insights Box (Atenção Necessária) (Ocupa 1/3) */}
+        <div className="bg-white rounded-[24px] shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-bold text-lg text-slate-900">Avisos e Insights</h3>
+            <button className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors border border-slate-100">
+              <TrendingUp className="w-4 h-4 text-slate-600" />
+            </button>
           </div>
-          
-          <div className="p-0 flex-1">
-            {data.todayAppointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                <p>Sem consultas para hoje.</p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-border">
-                {data.todayAppointments.map((apt) => (
-                  <li key={apt.id} className="p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors">
-                    <div className="text-center w-14">
-                      <p className="font-bold text-foreground">{apt.time}</p>
+
+          <div className="flex-1 overflow-y-auto space-y-4">
+            
+            {/* Aviso Dinâmico */}
+            {data.attentionNeeded.length > 0 && (
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 relative overflow-hidden">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⚠️</span>
+                    <h4 className="font-bold text-sm text-slate-900">Atenção Necessária</h4>
+                  </div>
+                  <MoreHorizontal className="w-4 h-4 text-amber-300" />
+                </div>
+                <p className="text-xs font-medium text-amber-800/80 mb-3 leading-relaxed">
+                  {data.attentionNeeded.length} pacientes precisam da sua atenção hoje (reagendamento ou fallback).
+                </p>
+                <div className="space-y-2">
+                  {data.attentionNeeded.slice(0,2).map(item => (
+                    <div key={item.id} className="flex justify-between items-center text-xs bg-white/60 px-3 py-2 rounded-xl">
+                      <span className="font-bold text-slate-700 truncate w-32">{item.name}</span>
+                      <span className="font-semibold text-amber-600">{item.time}</span>
                     </div>
-                  
-                  <div className="w-1 h-10 rounded-full bg-border" />
-                  
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm">{apt.name}</p>
-                    <p className="text-xs text-muted-foreground">{apt.procedure}</p>
-                  </div>
-                  
-                  <div>
-                    <span className={cn(
-                      "text-xs font-semibold px-2.5 py-0.5 rounded-full border",
-                      apt.status === 'Confirmado' 
-                        ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
-                        : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
-                    )}>
-                      {apt.status}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  ))}
+                </div>
+              </div>
             )}
+
+            {/* Static Insights matching Dribbble */}
+            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">💡</span>
+                  <h4 className="font-bold text-sm text-slate-900">Follow-up reminder</h4>
+                </div>
+                <MoreHorizontal className="w-4 h-4 text-blue-300" />
+              </div>
+              <p className="text-xs font-medium text-blue-800/70 leading-relaxed">
+                3 Pacientes do mês passado precisam agendar retorno de rotina.
+              </p>
+            </div>
+
+            <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📈</span>
+                  <h4 className="font-bold text-sm text-slate-900">Busiest Day</h4>
+                </div>
+                <MoreHorizontal className="w-4 h-4 text-emerald-300" />
+              </div>
+              <p className="text-xs font-medium text-emerald-800/70 leading-relaxed">
+                Terça-feira é o dia mais movimentado, com média de 12 consultas.
+              </p>
+            </div>
+
           </div>
         </div>
       </div>
 
-      {/* Upgrade Welcome Modal */}
-      {upgradedTier && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
-            <div className={`p-8 text-center text-white ${upgradedTier === 'ultra' ? 'bg-purple-600' : 'bg-blue-600'}`}>
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-10 h-10 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold">Parabéns! 🎉</h2>
-              <p className="mt-2 text-white/90">Sua assinatura foi atualizada para o plano {upgradedTier.toUpperCase()}</p>
-            </div>
-            
-            <div className="p-8">
-              <h3 className="font-semibold text-gray-900 mb-4 text-center">Novos recursos disponíveis:</h3>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <div className="bg-green-100 p-1 rounded-full text-green-600 shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                  <p className="text-sm text-gray-700">Automação de WhatsApp liberada para todos os agendamentos</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="bg-green-100 p-1 rounded-full text-green-600 shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                  <p className="text-sm text-gray-700">Painel completo da secretária para visualizar confirmações</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="bg-green-100 p-1 rounded-full text-green-600 shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                  <p className="text-sm text-gray-700">Follow-up automático de Retorno (Recall)</p>
-                </li>
-                {upgradedTier === 'ultra' && (
-                  <li className="flex items-start gap-3">
-                    <div className="bg-green-100 p-1 rounded-full text-green-600 shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                    <p className="text-sm text-gray-700">Inteligência Artificial Ativada para fallbacks de conversas</p>
-                  </li>
-                )}
-              </ul>
-              
-              <button
-                onClick={() => setUpgradedTier(null)}
-                className={`w-full py-3 px-4 rounded-xl text-center font-semibold text-sm transition-all shadow-sm text-white ${upgradedTier === 'ultra' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-              >
-                Explorar Painel
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 }

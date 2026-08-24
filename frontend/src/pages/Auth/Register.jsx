@@ -2,14 +2,36 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Mail, Building2, User, Check, ShieldCheck } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { setToken } from '../../lib/auth';
+import { fetchApi, setToken } from '../../lib/auth';
 import { toast } from 'sonner';
 
 export default function Register() {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({ name: '', clinicName: '', email: '', code: '', password: '' });
+  const [formData, setFormData] = useState({ name: '', clinicName: '', slug: '', email: '', code: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState(null);
+  const [checkingSlug, setCheckingSlug] = useState(false);
   const navigate = useNavigate();
+
+  const checkSlug = async (slugVal) => {
+    if (!slugVal) return setSlugAvailable(null);
+    setCheckingSlug(true);
+    try {
+      const res = await fetchApi(`/clinics/check-slug?slug=${slugVal}`);
+      const data = await res.json();
+      setSlugAvailable(data.available);
+    } catch (e) {
+      setSlugAvailable(null);
+    } finally {
+      setCheckingSlug(false);
+    }
+  };
+
+  const handleSlugChange = (e) => {
+    const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setFormData({ ...formData, slug: val });
+    setSlugAvailable(null);
+  };
 
   // Validations
   const hasMinLen = formData.password.length >= 8;
@@ -22,12 +44,17 @@ export default function Register() {
     setLoading(true);
     try {
       if (step === 1) {
-        if (!formData.clinicName) {
-          toast.error('Informe o nome da clínica');
+        if (!formData.clinicName || !formData.slug) {
+          toast.error('Informe o nome da clínica e o link personalizado');
           setLoading(false);
           return;
         }
-        const res = await fetch('http://localhost:3000/auth/register/request-code', {
+        if (slugAvailable === false) {
+          toast.error('Este link personalizado já está em uso.');
+          setLoading(false);
+          return;
+        }
+        const res = await fetchApi('/auth/register/request-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: formData.name, clinicName: formData.clinicName, email: formData.email })
@@ -38,7 +65,7 @@ export default function Register() {
           setStep(2);
         } else toast.error(data.error || 'Erro ao enviar código');
       } else if (step === 2) {
-        const res = await fetch('http://localhost:3000/auth/register/verify-code', {
+        const res = await fetchApi('/auth/register/verify-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email, code: formData.code })
@@ -50,10 +77,10 @@ export default function Register() {
         } else toast.error(data.error || 'Código inválido');
       } else if (step === 3) {
         if (!canComplete) return;
-        const res = await fetch('http://localhost:3000/auth/register/complete', {
+        const res = await fetchApi('/auth/register/complete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: formData.name, clinicName: formData.clinicName, email: formData.email, password: formData.password })
+          body: JSON.stringify({ name: formData.name, clinicName: formData.clinicName, slug: formData.slug, email: formData.email, password: formData.password })
         });
         const data = await res.json();
         if (res.ok) {
@@ -112,6 +139,34 @@ export default function Register() {
               <div className="relative">
                 <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <input value={formData.clinicName} onChange={e => setFormData({...formData, clinicName: e.target.value})} type="text" className="w-full h-10 pl-10 border border-input rounded-md px-3 text-sm bg-background transition-all focus:ring-2 focus:ring-blue-600" placeholder="Odonto Prime" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Link Personalizado (Username)</label>
+              <div className="flex rounded-md shadow-sm">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground sm:text-sm">
+                  https://
+                </span>
+                <input 
+                  type="text" 
+                  value={formData.slug}
+                  onChange={handleSlugChange}
+                  onBlur={(e) => checkSlug(e.target.value)}
+                  className={cn(
+                    "flex-1 min-w-0 block w-full px-3 py-2 rounded-none border border-input text-sm bg-background focus:ring-2 focus:ring-blue-600 transition-all",
+                    slugAvailable === true && "border-green-500 focus:ring-green-500",
+                    slugAvailable === false && "border-red-500 focus:ring-red-500"
+                  )} 
+                  placeholder="minhaclinica" 
+                />
+                <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-input bg-muted text-muted-foreground sm:text-sm">
+                  .toothify.com
+                </span>
+              </div>
+              <div className="h-4">
+                {checkingSlug && <p className="text-xs text-muted-foreground">Verificando disponibilidade...</p>}
+                {slugAvailable === true && <p className="text-xs text-green-600 dark:text-green-500 font-medium flex items-center gap-1"><Check className="w-3 h-3"/> Link disponível!</p>}
+                {slugAvailable === false && <p className="text-xs text-red-600 dark:text-red-500 font-medium">Este link já está em uso por outra clínica.</p>}
               </div>
             </div>
             <div className="space-y-2">

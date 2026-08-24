@@ -4,9 +4,22 @@ const prisma = new PrismaClient();
 class PatientController {
   async create(req, res) {
     try {
-      const { name, phone } = req.body;
+      const { name, phone, email, cpf, rg, birthDate, cep, address, neighborhood, city, state } = req.body;
       const patient = await prisma.patient.create({
-        data: { name, phone, clinicId: req.user.clinicId }
+        data: {
+          clinicId: req.user.clinicId,
+          name,
+          phone,
+          email: email || '',
+          cpf,
+          rg,
+          birthDate: birthDate ? new Date(birthDate) : null,
+          cep,
+          address,
+          neighborhood,
+          city,
+          state
+        }
       });
       res.json(patient);
     } catch (error) {
