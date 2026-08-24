@@ -10,6 +10,7 @@ async function main() {
   const clinic = await prisma.clinic.create({
     data: {
       name: 'Clínica Odonto Prime (Teste)',
+      slug: 'odonto-prime-teste',
       whatsappNumber: '5511999999999',
     }
   });
