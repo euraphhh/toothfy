@@ -55,6 +55,7 @@ O app mobile (Expo) NÃO entra neste repositório — fica em repositório próp
 - `docs/product-strategy.md` — estratégia de produto, planos, matriz de features
 - `docs/data-architecture.md` — modelo de dados, RLS, indexação
 - `docs/technical-decisions-and-mvp.md` — decisão de ORM/Auth, contrato de tools, backlog de MVP
+- `docs/patient-registration-flow.md` — arquitetura do fluxo híbrido de cadastro de pacientes (Recepção + Auto-cadastro via WhatsApp com RLS bypass isolado)
 
 ## Não alterar sem aprovação humana explícita
 
