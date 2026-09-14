@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { X, ArrowRight, Smartphone, FileText, CheckCircle, Loader2, Link as LinkIcon, QrCode } from "lucide-react";
 import { createPatient } from "@/domain/patients/actions";
+import { maskCPF, maskPhone, maskCEP, maskRG } from "@/lib/formatters";
+import { QRCodeSVG } from "qrcode.react";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -49,7 +51,14 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
   const [showToast, setShowToast] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+
+    // Apply masks
+    if (name === "cpf" || name === "responsibleCpf") value = maskCPF(value);
+    if (name === "phone" || name === "landline" || name === "emergencyContact.phone") value = maskPhone(value);
+    if (name === "address.cep") value = maskCEP(value);
+    if (name === "rg") value = maskRG(value);
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setPatientData(prev => ({
@@ -126,15 +135,17 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
       <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-100">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">Novo Paciente</h2>
-            <p className="text-slate-500 text-sm mt-0.5">Etapa {step} de {step === 3 ? 3 : 2}</p>
+        {step < 4 && (
+          <div className="flex items-center justify-between p-6 border-b border-slate-100">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Novo Paciente</h2>
+              <p className="text-slate-500 text-sm mt-0.5">Etapa {step} de 3</p>
+            </div>
+            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+              <X size={20} />
+            </button>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
-            <X size={20} />
-          </button>
-        </div>
+        )}
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1">
@@ -371,8 +382,11 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
 
               <div className="w-full max-w-sm bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 flex flex-col items-center gap-4">
                 <div className="w-40 h-40 bg-white border border-slate-200 rounded-xl flex items-center justify-center p-2 shadow-sm">
-                   {/* QR Code Placeholder (could use a real lib like react-qr-code) */}
-                   <QrCode size={120} className="text-slate-400" />
+                   {generatedLink ? (
+                     <QRCodeSVG value={generatedLink} size={132} level="M" />
+                   ) : (
+                     <QrCode size={120} className="text-slate-400" />
+                   )}
                 </div>
                 
                 <div className="flex items-center gap-2 w-full bg-white border border-slate-200 rounded-xl p-2 px-3 shadow-sm">

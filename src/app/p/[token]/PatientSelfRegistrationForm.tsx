@@ -4,6 +4,8 @@ import { useState } from "react";
 import { completeSelfRegistration } from "@/domain/patients/actions";
 import { Loader2 } from "lucide-react";
 
+import { maskCPF, maskPhone, maskCEP, maskRG } from "@/lib/formatters";
+
 export function PatientSelfRegistrationForm({ token, initialData }: { token: string, initialData: any }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,7 +47,14 @@ export function PatientSelfRegistrationForm({ token, initialData }: { token: str
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+
+    // Apply masks
+    if (name === "cpf" || name === "responsibleCpf") value = maskCPF(value);
+    if (name === "phone" || name === "landline" || name === "emergencyContact.phone") value = maskPhone(value);
+    if (name === "address.cep") value = maskCEP(value);
+    if (name === "rg") value = maskRG(value);
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
