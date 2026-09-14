@@ -15,10 +15,20 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
     name: "",
     phone: "",
     cpf: "",
+    rg: "",
     email: "",
+    landline: "",
     birthDate: "",
     profession: "",
     gender: "",
+    howFoundUs: "",
+    notes: "",
+    responsibleName: "",
+    responsibleCpf: "",
+    emergencyContact: {
+      name: "",
+      phone: ""
+    },
     address: {
       cep: "",
       street: "",
@@ -36,8 +46,9 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
 
   const [generatedLink, setGeneratedLink] = useState("");
   const [generatedToken, setGeneratedToken] = useState("");
+  const [showToast, setShowToast] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
@@ -90,6 +101,12 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generatedLink);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
   const shareViaWhatsApp = () => {
     const text = encodeURIComponent(`Olá ${patientData.name}! Para agilizar seu atendimento na clínica, por favor complete seu cadastro através deste link seguro: ${generatedLink}`);
     window.open(`https://wa.me/${patientData.phone.replace(/\D/g, '')}?text=${text}`, '_blank');
@@ -99,6 +116,13 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}></div>
       
+      {/* Simple Toast Notification */}
+      {showToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] bg-emerald-500 text-white px-4 py-2 rounded-full font-semibold shadow-lg animate-in fade-in slide-in-from-top-4 duration-300">
+          Link copiado!
+        </div>
+      )}
+
       <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
@@ -217,6 +241,10 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
                     <input name="cpf" value={patientData.cpf} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
                   </div>
                   <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">RG</label>
+                    <input name="rg" value={patientData.rg} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                  <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Data Nasc.</label>
                     <input type="date" name="birthDate" value={patientData.birthDate} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
                   </div>
@@ -230,15 +258,58 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">E-mail</label>
-                    <input type="email" name="email" value={patientData.email} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Profissão</label>
+                    <input name="profession" value={patientData.profession} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Como nos conheceu?</label>
+                    <input name="howFoundUs" value={patientData.howFoundUs} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
                   </div>
                 </div>
               </div>
 
-              {/* Seção Convênio */}
+              {/* Seção Contato & Endereço */}
               <div>
-                <h3 className="text-sm font-bold uppercase text-slate-400 tracking-wider mb-4 border-b border-slate-100 pb-2">Convênio</h3>
+                <h3 className="text-sm font-bold uppercase text-slate-400 tracking-wider mb-4 border-b border-slate-100 pb-2">Contato & Endereço</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">E-mail</label>
+                    <input type="email" name="email" value={patientData.email} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Telefone Fixo</label>
+                    <input type="tel" name="landline" value={patientData.landline} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contato de Emergência (Nome)</label>
+                    <input name="emergencyContact.name" value={patientData.emergencyContact.name} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contato de Emergência (Tel)</label>
+                    <input name="emergencyContact.phone" value={patientData.emergencyContact.phone} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">CEP</label>
+                    <input name="address.cep" value={patientData.address.cep} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                  <div className="sm:col-span-2 grid grid-cols-3 gap-4">
+                    <div className="col-span-2">
+                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">Rua</label>
+                       <input name="address.street" value={patientData.address.street} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                    </div>
+                    <div>
+                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nº</label>
+                       <input name="address.number" value={patientData.address.number} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção Convênio e Responsável */}
+              <div>
+                <h3 className="text-sm font-bold uppercase text-slate-400 tracking-wider mb-4 border-b border-slate-100 pb-2">Convênio & Responsável</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Plano</label>
@@ -248,6 +319,22 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Carteirinha</label>
                     <input name="insuranceData.cardNumber" value={patientData.insuranceData.cardNumber} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
                   </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Responsável Legal (Nome)</label>
+                    <input name="responsibleName" value={patientData.responsibleName} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Responsável Legal (CPF)</label>
+                    <input name="responsibleCpf" value={patientData.responsibleCpf} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Seção Observações */}
+              <div>
+                <h3 className="text-sm font-bold uppercase text-slate-400 tracking-wider mb-4 border-b border-slate-100 pb-2">Observações da Clínica</h3>
+                <div>
+                  <textarea name="notes" rows={2} value={patientData.notes} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none"></textarea>
                 </div>
               </div>
 
@@ -291,7 +378,7 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
                 <div className="flex items-center gap-2 w-full bg-white border border-slate-200 rounded-xl p-2 px-3 shadow-sm">
                   <LinkIcon size={16} className="text-slate-400 shrink-0" />
                   <input type="text" readOnly value={generatedLink} className="w-full text-sm text-slate-600 outline-none bg-transparent" />
-                  <button onClick={() => navigator.clipboard.writeText(generatedLink)} className="text-[var(--color-primary)] text-xs font-bold hover:underline shrink-0">
+                  <button onClick={handleCopy} className="text-[var(--color-primary)] text-xs font-bold hover:underline shrink-0">
                     Copiar
                   </button>
                 </div>

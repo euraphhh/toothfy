@@ -12,9 +12,18 @@ export function PatientSelfRegistrationForm({ token, initialData }: { token: str
   const [formData, setFormData] = useState({
     cpf: initialData.cpf || "",
     rg: initialData.rg || "",
+    email: initialData.email || "",
+    landline: initialData.landline || "",
     birthDate: initialData.birthDate || "",
     gender: initialData.gender || "",
     profession: initialData.profession || "",
+    howFoundUs: initialData.howFoundUs || "",
+    responsibleName: initialData.responsibleName || "",
+    responsibleCpf: initialData.responsibleCpf || "",
+    emergencyContact: initialData.emergencyContact || {
+      name: "",
+      phone: ""
+    },
     address: initialData.address || {
       cep: "",
       street: "",
@@ -94,6 +103,32 @@ export function PatientSelfRegistrationForm({ token, initialData }: { token: str
       </div>
 
       <div>
+        <h3 className="text-sm font-bold uppercase text-[var(--color-primary)] tracking-wider mb-4 border-b border-slate-100 pb-2">Contato Adicional & Como nos conheceu</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">E-mail</label>
+            <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Telefone Fixo</label>
+            <input type="tel" name="landline" value={formData.landline} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contato de Emergência (Nome)</label>
+            <input name="emergencyContact.name" value={formData.emergencyContact.name} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contato de Emergência (Telefone)</label>
+            <input name="emergencyContact.phone" value={formData.emergencyContact.phone} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Como você conheceu a clínica?</label>
+            <input name="howFoundUs" placeholder="Ex: Indicação, Instagram, Google..." value={formData.howFoundUs} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+          </div>
+        </div>
+      </div>
+
+      <div>
         <h3 className="text-sm font-bold uppercase text-[var(--color-primary)] tracking-wider mb-4 border-b border-slate-100 pb-2">Endereço</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -114,7 +149,7 @@ export function PatientSelfRegistrationForm({ token, initialData }: { token: str
       </div>
 
       <div>
-        <h3 className="text-sm font-bold uppercase text-[var(--color-primary)] tracking-wider mb-4 border-b border-slate-100 pb-2">Convênio Odontológico</h3>
+        <h3 className="text-sm font-bold uppercase text-[var(--color-primary)] tracking-wider mb-4 border-b border-slate-100 pb-2">Convênio Odontológico e Responsável</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Plano</label>
@@ -123,6 +158,14 @@ export function PatientSelfRegistrationForm({ token, initialData }: { token: str
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Carteirinha</label>
             <input name="insuranceData.cardNumber" value={formData.insuranceData.cardNumber} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Responsável Legal (Nome)</label>
+            <input name="responsibleName" placeholder="Caso o paciente seja menor" value={formData.responsibleName} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Responsável Legal (CPF)</label>
+            <input name="responsibleCpf" value={formData.responsibleCpf} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
           </div>
         </div>
       </div>
