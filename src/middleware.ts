@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
       }
 
       if (isAuthRoute && session) {
-        return NextResponse.redirect(new URL("/app", request.url));
+        return NextResponse.redirect(new URL("/app/agenda", request.url));
       }
     } catch (err) {
       if (isAppRoute) {

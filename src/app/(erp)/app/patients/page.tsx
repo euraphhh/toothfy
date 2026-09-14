@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Search, User, Filter, ArrowRight } from "lucide-react";
 import { getPatients } from "@/domain/patients/actions";
+import { NewPatientButton } from "./NewPatientButton";
 
 export default async function PatientsPage() {
   const patients = await getPatients();
@@ -12,10 +13,7 @@ export default async function PatientsPage() {
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-2">Pacientes</h1>
           <p className="text-slate-500 text-lg">Gerencie o histórico clínico e de relacionamento.</p>
         </div>
-        <button className="bg-[var(--color-foreground)] hover:bg-slate-800 text-white px-6 py-3.5 rounded-full font-bold transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 group">
-          <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-          Novo Paciente
-        </button>
+        <NewPatientButton />
       </div>
 
       <div className="glass-panel rounded-3xl overflow-hidden shadow-sm flex flex-col">

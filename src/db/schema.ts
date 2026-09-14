@@ -28,10 +28,39 @@ export const users = pgTable('users', {
 export const patients = pgTable('patients', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  
+  // Dados Pessoais
   name: text('name').notNull(),
+  gender: text('gender'),
   cpf: text('cpf'),
-  phone: text('phone').notNull(), // chave de correlação com WhatsApp
+  rg: text('rg'),
+  profession: text('profession'),
   birthDate: date('birth_date'),
+  
+  // Contato
+  phone: text('phone').notNull(), // celular, chave do whats
+  email: text('email'),
+  landline: text('landline'),
+  emergencyContact: jsonb('emergency_contact'), // { name, phone }
+  
+  // Endereço e Preferências
+  address: jsonb('address'), // { cep, street, number, neighborhood, city, state }
+  automaticReminders: boolean('automatic_reminders').default(true),
+  howFoundUs: text('how_found_us'),
+  
+  // Classificação
+  categories: text('categories').array(),
+  notes: text('notes'),
+  
+  // Dados de Convênio e Responsável
+  responsibleName: text('responsible_name'),
+  responsibleCpf: text('responsible_cpf'),
+  insuranceData: jsonb('insurance_data'), // { plan, cardNumber, titular, titularCpf }
+  
+  // Fluxo de Auto-cadastro
+  selfRegistrationToken: uuid('self_registration_token').unique(),
+  selfRegistrationCompleted: boolean('self_registration_completed').default(false),
+  
   anamnesis: jsonb('anamnesis').default({}),
   lgpdConsentAt: timestamp('lgpd_consent_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

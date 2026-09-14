@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       if (error) throw new Error(error.message);
       
-      router.push("/app");
+      router.push("/app/agenda");
     } catch (err: any) {
       setError(err.message || "Credenciais inválidas");
       setLoading(false);
