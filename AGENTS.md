@@ -48,12 +48,14 @@ O app mobile (Expo) NÃO entra neste repositório — fica em repositório próp
 - TDD obrigatório para: regra de negócio pura (precificação, política de negociação, triagem), isolamento de tenant, e contrato de cada tool.
 - TDD **não** se aplica ao texto literal gerado pelo LLM na conversa — para isso, usar avaliação por cenário (dado um histórico, afirmar qual tool foi chamada, não o texto exato da resposta).
 - SOLID aplicado com prioridade clara: Dependency Inversion é o mais importante aqui — provedor de LLM, canal do WhatsApp e gateway de pagamento ficam atrás de interface, nunca chamados direto do código de domínio. Não aplicar princípio sem um motivo concreto amarrado a este projeto.
+- Toda feature nova ou alteração similar DEVE ser criada em uma branch separada para, posteriormente, ser feito o merge via Pull Request.
 
 ## Documentos de referência (ler antes de iniciar qualquer épico)
 
 - `docs/product-strategy.md` — estratégia de produto, planos, matriz de features
 - `docs/data-architecture.md` — modelo de dados, RLS, indexação
 - `docs/technical-decisions-and-mvp.md` — decisão de ORM/Auth, contrato de tools, backlog de MVP
+- `docs/patient-registration-flow.md` — arquitetura do fluxo híbrido de cadastro de pacientes (Recepção + Auto-cadastro via WhatsApp com RLS bypass isolado)
 
 ## Não alterar sem aprovação humana explícita
 
