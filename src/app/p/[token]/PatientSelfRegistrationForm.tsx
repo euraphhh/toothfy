@@ -152,17 +152,31 @@ export function PatientSelfRegistrationForm({ token, initialData }: { token: str
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Telefone Fixo</label>
             <input type="tel" name="landline" value={formData.landline} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
           </div>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Como você conheceu a clínica?</label>
+            <select name="howFoundUs" value={formData.howFoundUs} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all">
+              <option value="">Selecione...</option>
+              <option value="indicacao">Indicação de paciente</option>
+              <option value="google">Google</option>
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="fachada">Passou em frente (Fachada)</option>
+              <option value="outros">Outros</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-bold uppercase text-[var(--color-primary)] tracking-wider mb-4 border-b border-slate-100 pb-2">Contato de Emergência</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contato de Emergência (Nome)</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nome do Contato</label>
             <input name="emergencyContact.name" value={formData.emergencyContact.name} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contato de Emergência (Telefone)</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Telefone do Contato</label>
             <input name="emergencyContact.phone" value={formData.emergencyContact.phone} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Como você conheceu a clínica?</label>
-            <input name="howFoundUs" placeholder="Ex: Indicação, Instagram, Google..." value={formData.howFoundUs} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
           </div>
         </div>
       </div>

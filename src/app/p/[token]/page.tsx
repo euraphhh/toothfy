@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { PatientSelfRegistrationForm } from "./PatientSelfRegistrationForm";
 import { Sparkles, CheckCircle } from "lucide-react";
 
-export default async function PatientSelfRegistrationPage({ params }: { params: { token: string } }) {
-  const patient = await getPatientByToken(params.token);
+export default async function PatientSelfRegistrationPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const patient = await getPatientByToken(token);
 
   if (!patient) {
     notFound();
@@ -47,7 +48,7 @@ export default async function PatientSelfRegistrationPage({ params }: { params: 
             </p>
           </div>
 
-          <PatientSelfRegistrationForm token={params.token} initialData={patient} />
+          <PatientSelfRegistrationForm token={token} initialData={patient} />
         </div>
         
         <p className="text-slate-400 text-xs text-center flex items-center gap-1">

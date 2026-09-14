@@ -304,7 +304,15 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Como nos conheceu?</label>
-                    <input name="howFoundUs" value={patientData.howFoundUs} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                    <select name="howFoundUs" value={patientData.howFoundUs} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none">
+                      <option value="">Selecione...</option>
+                      <option value="indicacao">Indicação de paciente</option>
+                      <option value="google">Google</option>
+                      <option value="instagram">Instagram</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="fachada">Passou em frente (Fachada)</option>
+                      <option value="outros">Outros</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -320,14 +328,6 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Telefone Fixo</label>
                     <input type="tel" name="landline" value={patientData.landline} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contato de Emergência (Nome)</label>
-                    <input name="emergencyContact.name" value={patientData.emergencyContact.name} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contato de Emergência (Tel)</label>
-                    <input name="emergencyContact.phone" value={patientData.emergencyContact.phone} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
@@ -358,6 +358,21 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Estado</label>
                        <input name="address.state" value={patientData.address.state} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção Contato de Emergência */}
+              <div>
+                <h3 className="text-sm font-bold uppercase text-slate-400 tracking-wider mb-4 border-b border-slate-100 pb-2">Contato de Emergência</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nome do Contato</label>
+                    <input name="emergencyContact.name" value={patientData.emergencyContact.name} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Telefone</label>
+                    <input name="emergencyContact.phone" value={patientData.emergencyContact.phone} onChange={handleChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none" />
                   </div>
                 </div>
               </div>
