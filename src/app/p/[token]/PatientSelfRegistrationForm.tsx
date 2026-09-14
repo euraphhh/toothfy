@@ -46,13 +46,43 @@ export function PatientSelfRegistrationForm({ token, initialData }: { token: str
     }
   });
 
+  const fetchViaCep = async (cepValue: string) => {
+    const cleanCep = cepValue.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setFormData(prev => ({
+            ...prev,
+            address: {
+              ...prev.address,
+              cep: cepValue,
+              street: data.logradouro || prev.address.street,
+              neighborhood: data.bairro || prev.address.neighborhood,
+              city: data.localidade || prev.address.city,
+              state: data.uf || prev.address.state,
+            }
+          }));
+        }
+      } catch (err) {
+        console.error("Erro ao buscar CEP", err);
+      }
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let { name, value } = e.target;
 
     // Apply masks
     if (name === "cpf" || name === "responsibleCpf") value = maskCPF(value);
     if (name === "phone" || name === "landline" || name === "emergencyContact.phone") value = maskPhone(value);
-    if (name === "address.cep") value = maskCEP(value);
+    if (name === "address.cep") {
+      value = maskCEP(value);
+      if (value.replace(/\D/g, '').length === 8) {
+        fetchViaCep(value);
+      }
+    }
     if (name === "rg") value = maskRG(value);
 
     if (name.includes('.')) {
@@ -144,14 +174,28 @@ export function PatientSelfRegistrationForm({ token, initialData }: { token: str
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">CEP</label>
             <input name="address.cep" value={formData.address.cep} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
           </div>
-          <div className="sm:col-span-2 grid grid-cols-3 gap-4">
-            <div className="col-span-2">
+          <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2">
                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Rua</label>
                <input name="address.street" value={formData.address.street} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
             </div>
             <div>
                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nº</label>
                <input name="address.number" value={formData.address.number} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+            </div>
+          </div>
+          <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Bairro</label>
+               <input name="address.neighborhood" value={formData.address.neighborhood} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+            </div>
+            <div>
+               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cidade</label>
+               <input name="address.city" value={formData.address.city} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
+            </div>
+            <div>
+               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Estado</label>
+               <input name="address.state" value={formData.address.state} onChange={handleChange} className="w-full p-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all" />
             </div>
           </div>
         </div>
