@@ -47,6 +47,9 @@ export function NewPatientWizard({ onClose }: { onClose: () => void }) {
   });
 
   const [generatedLink, setGeneratedLink] = useState("");
+  const [generatedToken, setGeneratedToken] = useState("");
+  const [showToast, setShowToast] = useState(false);
+
   const fetchViaCep = async (cepValue: string) => {
     const cleanCep = cepValue.replace(/\D/g, '');
     if (cleanCep.length === 8) {
